@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WakandaShop</title>
+<style>
+  body {
+    font-family: "Comfortaa", sans-serif;
+    background: #0b0b0b;
+    color: #eee;
+    margin: 0;
+    padding: 0;
+  }
+
+  header {
+    background: #111;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #ff00ff, #00ffff, #ff0077);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.3),
+                 0 0 20px rgba(0, 255, 255, 0.3);
+    letter-spacing: 1px;
+    transition: 0.3s ease;
+  }
+
+  header h1:hover {
+    text-shadow: 0 0 20px rgba(255, 0, 255, 0.6),
+                 0 0 40px rgba(0, 255, 255, 0.6);
+    transform: scale(1.05);
+  }
+
+  nav a {
+    color: #ccc;
+    margin-left: 20px;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  nav a:hover {
+    color: #00d1b2;
+  }
+  .cards-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px 20px;
+    flex-wrap: wrap;
+  }
+
+  .card-container {
+    position: relative;
+    width: 350px;
+    height: 500px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #141414;
+    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    transition: transform 0.2s;
+  }
+
+  .card-container:hover {
+    transform: translateY(-4px);
+  }
+
+  .card-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+
+  .card-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+  }
+
+  .card-content h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 22px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 8px;
+    position: absolute;
+  }
+
+  .card-content p {
+    margin: 50px 0;
+    color: #ccc;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 8px;
+    position: relative;
+  }
+
+  .order-btn {
+    align-self: center;
+    margin-top: auto;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: transparent;
+    border: 2px solid #1bfd9c;
+    color: #1bfd9c;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .order-btn:hover {
+    background: #1bfd9c22;
+    color: #82ffc9;
+  }
+
+  .order-popup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .order-box {
+    background: #1b1b1b;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    color: #ccc;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .order-box select,
+  .order-box input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 10px;
+    border: none;
+    background: #2b2b2b;
+    color: #eee;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+  }
+
+  .order-box button {
+    font-size: 15px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 2px solid #1bfd9c;
+    background: transparent;
+    color: #1bfd9c;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .order-box button:hover {
+    background: #1bfd9c22;
+  }
+
+  #smoke {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+  }
+  #alreadyOrderedPopup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+  }
+  #alreadyOrderedPopup .box {
+    background: #1b1b1b;
+    padding: 25px 20px;
+    border-radius: 16px;
+    text-align: center;
+    border: 2px solid #ff0099;
+    color: #fff;
+    box-shadow: 0 0 20px #ff00ff55;
+  }
+  #alreadyOrderedPopup button {
+    margin-top: 15px;
+    padding: 8px 18px;
+    border: none;
+    background: #ff0099;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&display=swap" rel="stylesheet">
+</head>
+<body>
+<canvas id="smoke"></canvas>
+<header>
+  <h1>WakandaShop</h1>
+  <nav>
+    <a href="index.html">Ассортимент</a>
+    <a href="https://t.me/wakandakrg">Поддержка</a>
+  </nav>
+</header>
+
+<main>
+  <div class="cards-row" id="cardsRow"></div>
+</main>
+
+<div class="order-popup" id="orderPopup">
+  <div class="order-box">
+    <div class="close-btn" onclick="closeOrder()">✕</div>
+    <h3 id="orderTitle">Заказ</h3>
+    <select id="flavorSelect"></select>
+    <input type="text" id="fioInput" placeholder="ФИО" required>
+    <input type="text" id="addressInput" placeholder="Адрес доставки" required>
+    <input type="tel" id="phoneInput" placeholder="Номер телефона" required>
+    <input type="text" id="telegramInput" placeholder="Telegram (необязательно)">
+    <button onclick="submitOrder()">Отправить заказ</button>
+  </div>
+</div>
+<div id="alreadyOrderedPopup">
+  <div class="box">
+    <p>⚠️ Вы уже оформляли заказ ранее.<br>Если есть ошибка — напишите в <a href="https://t.me/wakandakrg" style="color:#00d1b2;">поддержку</a>.</p>
+    <button onclick="document.getElementById('alreadyOrderedPopup').style.display='none'">ОК</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('smoke');
+const ctx = canvas.getContext('2d');
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+let particles = Array(80).fill().map(() => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  r: Math.random() * 60 + 40,
+  s: Math.random() * 0.3 + 0.1,
+  o: Math.random() * 0.1 + 0.05 
+}));
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+    gradient.addColorStop(0, `rgba(255,255,255,${p.o})`);
+    gradient.addColorStop(0.5, 'rgba(180, 0, 255, 0.05)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+    p.y -= p.s;
+    p.x += Math.sin(p.y / 50) * 0.3;
+    if (p.y + p.r < 0) {
+      p.y = canvas.height + p.r;
+      p.x = Math.random() * canvas.width;
+    }
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+const products = [
+  {
+    name: "Wakanda 10000",
+    description: "Классика жанра, проверенное качество.",
+    price: "Цена: xxx тг",
+    image: "https://www.vapshop.ma/wp-content/uploads/2023/08/1866cdfa6cc663a712625269b878ea57.webp",
+    flavors: ["Арбуз", "Манго", "Мята", "Кола"]
+  },
+  {
+    name: "Wakanda 18000",
+    description: "Компактный формат, отличная тяга.",
+    price: "Цена: 13000 тг + Доставка (Оплата при получении)",
+    image: "https://escovape.ma/wp-content/uploads/2025/01/waka-sopro-strawberry-banana-18k-Puffs.jpg",
+    flavors: ["Банан Кокос", "Кислое Яблоко", "Лед Кокос"]
+  },  
+  {
+    name: "Wakanda 25000",
+    description: "Новая серия с улучшенной батареей.",
+    price: "Цена: xxx тг",
+    image: "https://dragonvapdubai.ae/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-05-at-6.53.09-PM-1.jpeg",
+    flavors: ["Яблоко", "Лед", "Гранат", "Клубника"]
+  }
+];
+
+const cardsRow = document.getElementById("cardsRow");
+const popup = document.getElementById("orderPopup");
+const flavorSelect = document.getElementById("flavorSelect");
+const orderTitle = document.getElementById("orderTitle");
+
+let selectedProduct = null;
+
+function renderCards() {
+  products.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "card-container";
+    card.innerHTML = `
+      <img src="${p.image}" alt="${p.name}">
+      <div class="card-content">
+        <div>
+          <h3>${p.name}</h3>
+          <p>${p.description}</p>
+          <p>${p.price}</p>
+        </div>
+        <button class="order-btn" onclick="openOrder(${i})">Заказать</button>
+      </div>
+    `;
+    cardsRow.appendChild(card);
+  });
+}
+
+function openOrder(index) {
+  selectedProduct = products[index];
+  orderTitle.textContent = `Заказ: ${selectedProduct.name}`;
+  flavorSelect.innerHTML = selectedProduct.flavors.map(f => `<option>${f}</option>`).join("");
+  popup.style.display = "flex";
+}
+
+function closeOrder() {
+  popup.style.display = "none";
+}
+
+function submitOrder() {
+  const lastOrderTime = localStorage.getItem('lastOrderTime');
+  const now = Date.now();
+  if (lastOrderTime && now - lastOrderTime < 3600000) {
+    document.getElementById('alreadyOrderedPopup').style.display = 'flex';
+    return;
+  }
+
+  const flavor = flavorSelect.value;
+  const fio = document.getElementById("fioInput").value.trim();
+  const address = document.getElementById("addressInput").value.trim();
+  const phone = document.getElementById("phoneInput").value.trim();
+  const telegram = document.getElementById("telegramInput").value.trim();
+
+  if (!fio || !address || !phone) {
+    alert("Пожалуйста, заполните все обязательные поля!");
+    return;
+  }
+
+  const data = {
+    product: selectedProduct.name,
+    flavor,
+    fio,
+    address,
+    phone,
+    telegram
+  };
+
+  fetch("https://script.google.com/macros/s/AKfycbzFG7Igs_FfNZ8J6sis83PN-Qjej_V65r97A-HXiEB4R929rHsXGNAeaUTda7zbozRx/exec", {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  .then(() => {
+    alert("✅ Заказ оформлен! Курьер скоро свяжется с вами.");
+    localStorage.setItem('lastOrderTime', now); 
+    closeOrder();
+  })
+  .catch((err) => {
+    console.error("Ошибка при отправке:", err);
+    alert("❌ Ошибка при оформлении заказа. Оформите заказ через поддержку");
+  });
+}
+
+renderCards();
+</script>
+</body>
+</html>

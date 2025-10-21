@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вход в систему</title>
+  <style>
+    :root{
+      --bg:#0d1117;
+      --panel: rgba(22,27,34,0.92);
+      --accent:#58a6ff;
+      --muted:#c9d1d9;
+      --ok:#238636;
+      --err:#ff5555;
+      --glass-border: #30363d;
+      --radius: 16px;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);font-family:"Ubuntu Mono",monospace;color:var(--muted);}
+    .wrap{
+      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    }
+
+    .login-window{
+      width:100%;max-width:420px;background:var(--panel);border:1px solid var(--glass-border);
+      border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px rgba(2,6,23,0.7);
+      backdrop-filter: blur(6px);
+      transition: transform .35s ease, opacity .35s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .title-bar{
+      display:flex;align-items:center;gap:10px;margin-bottom:18px;
+    }
+    .dots{display:flex;gap:8px}
+    .dot{width:11px;height:11px;border-radius:50%}
+    .dot.red{background:#ff5f56}
+    .dot.yellow{background:#ffbd2e}
+    .dot.green{background:#27c93f}
+    h2{margin:0;color:var(--accent);font-weight:400;font-size:18px;letter-spacing:0.2px}
+
+    .controls{display:flex;flex-direction:column;gap:12px}
+    input[type="password"]{
+      width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--glass-border);
+      background:#0f1419;color:var(--muted);outline:none;font-size:15px;box-sizing:border-box;
+      transition: box-shadow .18s ease, border-color .18s ease;
+    }
+    input[type="password"]:focus{border-color:var(--accent);box-shadow:0 0 8px #58a6ff30}
+
+    .btn-row{display:flex;gap:12px;margin-top:6px}
+    button{
+      flex:1;padding:11px;border-radius:10px;border:none;font-weight:600;cursor:pointer;
+      background:var(--ok);color:#fff;font-size:15px;
+      transition:transform .12s ease,filter .12s ease;
+    }
+    button:active{transform:translateY(1px)}
+    .error{min-height:20px;color:var(--err);margin-top:8px;font-size:14px}
+
+    .video-overlay{
+      display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;
+      pointer-events:none;
+    }
+    .video-card{
+      width:90vw;max-width:820px;border-radius:var(--radius);overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,0.7);background:#000;pointer-events:auto;
+      transform:scale(.98);opacity:0;transition:opacity .28s ease,transform .28s ease;
+    }
+    .video-card.show{transform:scale(1);opacity:1}
+    video{
+      display:block;width:100%;height:auto;max-height:85vh;object-fit:cover;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    @media (max-width:420px){
+      .login-window{padding:18px}
+      h2{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="login-window" id="loginWindow" role="region" aria-label="Окно авторизации">
+      <div class="title-bar">
+        <div class="dots">
+          <div class="dot red" aria-hidden="true"></div>
+          <div class="dot yellow" aria-hidden="true"></div>
+          <div class="dot green" aria-hidden="true"></div>
+        </div>
+        <h2>Авторизация</h2>
+      </div>
+
+      <div class="controls">
+        <label for="password" style="font-size:13px;color:#9fb1c9;margin-bottom:6px">Пароль</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="Введите пароль" inputmode="text" />
+        <div class="btn-row">
+          <button id="enterBtn">Войти</button>
+        </div>
+        <div class="error" id="errorMsg" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="video-overlay" id="videoOverlay" aria-hidden="true">
+    <div class="video-card" id="videoCard">
+      <video id="loginVideo" src="video.mp4" playsinline webkit-playsinline></video>
+    </div>
+  </div>
+
+  <script>
+    const validHashes = [
+      "9a14ec915f5ab0e5f54bc7ea31a82d49d7b1e6d1fcbd437093c939095c3b142b",
+      "17d87958634f86d627d82589881da58d96bb1137a81cb44ef031d50c0e6558bf", 
+      "07b6a490c343747860b98da424638b70edc3be9503ef9b5d8bdcee2d52931cb7",
+      "a54e9ea6fa8030ded9ded5ddfb7519e69a1a8259999d7d09fbefeda2db72e768", 
+      "bfe4e0701e22ee7d09491fe5ecb70b8109b51055a4c06cedbcdad675fa3fe5ae"  
+    ];
+
+    const passwordInput = document.getElementById("password");
+    const errorMsg = document.getElementById("errorMsg");
+    const enterBtn = document.getElementById("enterBtn");
+    const loginWindow = document.getElementById("loginWindow");
+    const videoOverlay = document.getElementById("videoOverlay");
+    const videoCard = document.getElementById("videoCard");
+    const loginVideo = document.getElementById("loginVideo");
+
+    enterBtn.addEventListener("click", handleTry);
+    passwordInput.addEventListener("keypress", function(e){
+      if (e.key === "Enter") handleTry();
+    });
+
+    async function handleTry(){
+      const raw = passwordInput.value.trim().toLowerCase();
+      if (!raw){
+        showError("Введите пароль");
+        return;
+      }
+      showError(""); // очистка
+
+      try {
+        const h = await sha256(raw);
+        if (validHashes.includes(h)){
+          await playIntroThenRedirect();
+        } else {
+          showError("Неверный пароль");
+        }
+      } catch (err){
+        console.error(err);
+        showError("Ошибка проверки пароля");
+      }
+    }
+
+    function showError(text){
+      errorMsg.textContent = text;
+    }
+
+    async function sha256(message){
+      const enc = new TextEncoder().encode(message);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      const hashArray = Array.from(new Uint8Array(buf));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    async function playIntroThenRedirect(){
+      loginWindow.style.transition = "opacity .35s ease, transform .35s ease";
+      loginWindow.style.opacity = "0";
+      loginWindow.style.transform = "translateY(-8px) scale(.995)";
+      await wait(360);
+      videoOverlay.style.display = "flex";
+      await wait(20);
+      videoCard.classList.add("show");
+      loginVideo.currentTime = 0;
+      try {
+        await loginVideo.play();
+      } catch (e) {
+        console.warn("Не удалось запустить видео автоматически", e);
+      }
+
+      loginVideo.onended = () => {
+        window.location.href = "indexx.html";
+      };
+      const MAX_INTRO = 12000; 
+      setTimeout(()=> {
+        if (!loginVideo.ended) {
+          try { loginVideo.pause(); } catch(e){}
+          window.location.href = "indexx.html";
+        }
+      }, MAX_INTRO);
+    }
+    function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
+    passwordInput.addEventListener("input", ()=> { if (errorMsg.textContent) errorMsg.textContent = ""; });
+  </script>
+</body>
+</html>
+
+
